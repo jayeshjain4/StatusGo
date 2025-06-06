@@ -2,7 +2,6 @@ import { Router, Request, Response } from 'express';
 import authRoutes from './routes/authRoutes';
 import STATUS_CODES from './utils/statusCodes';
 import { sendResponse } from './utils/responseUtils';
-import otpRoutes from '../routes/otpRoutes';
 
 const router = Router();
 
@@ -11,6 +10,5 @@ router.get("/", (req: Request, res: Response) => {
 })
 
 router.use("/auth", authRoutes);
-router.use("/otp", otpRoutes);
 
 export default router;
