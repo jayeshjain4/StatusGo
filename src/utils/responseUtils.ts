@@ -1,6 +1,16 @@
 import { Response } from 'express';
-import STATUS_CODES from "./statusCodes";
+import STATUS_CODES from './statusCodes';
 
-export const sendResponse = (res: Response, status: boolean, data: unknown, message = "", statusCode = STATUS_CODES.OK) => {
-  return res.status(statusCode).json({ status, data, message });
-}
+export const sendResponse = (
+  res: Response,
+  success: boolean,
+  data: any = null,
+  message: string = '',
+  statusCode: number = STATUS_CODES.OK
+): void => {
+  res.status(statusCode).json({
+    success,
+    message,
+    data
+  });
+};

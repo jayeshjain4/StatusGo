@@ -1,7 +1,8 @@
 import { Router, Request, Response } from 'express';
-import authRoutes from './routes/authRoutes';
+import authRoutes from './routes/auth.routes';
 import STATUS_CODES from './utils/statusCodes';
 import { sendResponse } from './utils/responseUtils';
+
 
 const router = Router();
 
@@ -10,5 +11,6 @@ router.get("/", (req: Request, res: Response) => {
 })
 
 router.use("/auth", authRoutes);
+
 
 export default router;

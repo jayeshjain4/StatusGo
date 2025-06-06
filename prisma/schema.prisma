@@ -12,49 +12,15 @@ model user {
   firstName String
   lastName  String
   email     String    @unique
+  phone     String    @unique
   password  String
   role      Role      @default(USER)
   isDeleted Boolean   @default(false)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
-  reviews   reviews[]
-  books     books[]   @relation("createdBy")
 }
 
 enum Role {
   USER
   ADMIN
-}
-
-model books {
-  id            Int       @id @default(autoincrement())
-  title         String
-  author        String
-  description   String
-  imageUrl      String
-  category      String
-  avgRating     Float     @default(0)
-  totalReviews  Int       @default(0)
-  isDeleted     Boolean   @default(false)
-  createdAt     DateTime  @default(now())
-  createdBy     Int
-  createdByUser user      @relation("createdBy", fields: [createdBy], references: [id])
-  updatedAt     DateTime  @updatedAt
-  reviews       reviews[]
-}
-
-model reviews {
-  id         Int      @id @default(autoincrement())
-  bookId     Int
-  book       books    @relation(fields: [bookId], references: [id])
-  userId     Int
-  user       user     @relation(fields: [userId], references: [id])
-  rating     Int
-  comment    String?
-  isApproved Boolean  @default(false)
-  isDeleted  Boolean  @default(false)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  @@unique([bookId, userId])
 }
