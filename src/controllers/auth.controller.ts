@@ -202,3 +202,8 @@ export const login = async (req: Request<{}, {}, LoginBody>, res: Response) => {
     );
   }
 };
+
+const router = Router();
+
+// Probable location: src/routes/authRoutes.ts
+// router.post('/signup', validateRequest(signupSchema), signup);
