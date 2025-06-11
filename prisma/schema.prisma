@@ -18,9 +18,21 @@ model user {
   isDeleted Boolean   @default(false)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+  categoryCreated category[]
 }
 
 enum Role {
   USER
   ADMIN
+}
+
+model category {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  imageUrl    String?    @unique  
+  isDeleted   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById Int?
+  createdBy   user?   @relation(fields: [createdById], references: [id])
 }

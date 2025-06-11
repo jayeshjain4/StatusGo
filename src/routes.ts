@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import authRoutes from './routes/authRoutes';
+import categoryRoutes from './routes/categoryRoutes';
 import STATUS_CODES from './utils/statusCodes';
 import { sendResponse } from './utils/responseUtils';
 
@@ -10,5 +11,6 @@ router.get("/", (req: Request, res: Response) => {
 })
 
 router.use("/auth", authRoutes);
+router.use("/category", categoryRoutes);
 
 export default router;

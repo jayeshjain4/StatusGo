@@ -44,3 +44,16 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
         sendResponse(res, false, null, error.message, STATUS_CODES.UNAUTHORIZED);
     }
 }; 
+
+export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
+    if(req.user?.role != 'ADMIN') {
+        return sendResponse(
+            res,
+            false,
+            null,
+            'Access denied. Admins only.',
+            STATUS_CODES.FORBIDDEN
+        )
+    }
+    next();
+}
