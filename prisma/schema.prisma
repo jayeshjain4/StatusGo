@@ -35,4 +35,6 @@ model category {
   updatedAt   DateTime  @updatedAt
   createdById Int?
   createdBy   user?   @relation(fields: [createdById], references: [id])
+  deletedAt   DateTime? 
+  popularity  Int       @default(0)
 }
