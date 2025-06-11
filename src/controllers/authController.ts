@@ -36,6 +36,7 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
                 firstName,
                 lastName,
                 email,
+                phone: req.body.phone,
                 password: await hashPassword(password),
             }
         })
