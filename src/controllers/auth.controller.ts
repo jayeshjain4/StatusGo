@@ -8,6 +8,8 @@ import STATUS_CODES from '../utils/statusCodes';
 import { AppError } from '../middlewares/errorHandler';
 import Joi from 'joi';
 import { Router } from 'express';
+import cloudinary from '../utils/cloudinary';
+import fs from 'fs';
 // import { validateRequest } from '../middlewares/validateRequest';
 
 // Initialize Prisma client once
@@ -38,6 +40,9 @@ const signupSchema = Joi.object({
 });
 
 export const signup = async (req: Request<{}, {}, SignupBody>, res: Response) => {
+  // Debug log to help diagnose multer/body issues
+  console.log('req.body:', req.body);
+  console.log('req.file:', req.file);
   try {
     const { firstName, lastName, email, phone, password } = req.body;
 
@@ -61,6 +66,16 @@ export const signup = async (req: Request<{}, {}, SignupBody>, res: Response) =>
       throw new AppError('User with this email or phone number already exists', STATUS_CODES.CONFLICT);
     }
 
+    // Handle profile image upload
+    let profileImageUrl: string | undefined = undefined;
+    if (req.file) {
+      const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+        folder: 'user-profiles',
+      });
+      profileImageUrl = uploadResult.secure_url;
+      fs.unlinkSync(req.file.path); // Remove local file
+    }
+
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -71,7 +86,8 @@ export const signup = async (req: Request<{}, {}, SignupBody>, res: Response) =>
         lastName,
         email,
         phone,
-        password: hashedPassword
+        password: hashedPassword,
+        profileImage: profileImageUrl,
       }
     });
 
@@ -91,7 +107,8 @@ export const signup = async (req: Request<{}, {}, SignupBody>, res: Response) =>
           firstName: user.firstName,
           lastName: user.lastName,
           email: user.email,
-          phone: user.phone
+          phone: user.phone,
+          profileImage: user.profileImage,
         },
         token
       },

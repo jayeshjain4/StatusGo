@@ -1,4 +1,5 @@
 import * as express from "express";
+import multer from "multer";
 
 declare global {
     namespace Express {
@@ -9,6 +10,7 @@ declare global {
 
         interface Request {
             user?: User;
+            file?: Express.Multer.File;
         }
     }
 }
