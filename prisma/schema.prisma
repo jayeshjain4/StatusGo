@@ -39,3 +39,10 @@ model category {
   deletedAt   DateTime? 
   popularity  Int       @default(0)
 }
+
+model post {
+  id           Int      @id @default(autoincrement())
+  attachment   String  // Cloudinary URL for photo or video
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}

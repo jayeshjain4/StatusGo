@@ -1,10 +1,12 @@
+// This file is deprecated. Use '../controllers/auth.controller' instead.
 import { Router } from 'express';
-import { login, signup } from '../controllers/authController';
+import { signup, login } from '../controllers/auth.controller';
+import { validateSignup, validateLogin } from '../middlewares/validation';
+import { upload } from '../../middleware/upload';
 
 const router = Router();
 
-router.post("/signup", signup);
-router.post("/login", login);
-
+router.post('/signup', upload.single('profileImage'), validateSignup, signup);
+router.post('/login', validateLogin, login);
 
 export default router;
