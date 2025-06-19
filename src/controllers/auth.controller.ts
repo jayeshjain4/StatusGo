@@ -20,13 +20,13 @@ interface SignupBody {
   firstName: string;
   lastName: string;
   email: string;
-  phone: string;
+  phone?: string;
   password: string;
 }
 
 // Type for login request body
 interface LoginBody {
-  phone: string;
+  email: string;
   password: string;
 }
 
@@ -35,7 +35,7 @@ const signupSchema = Joi.object({
   firstName: Joi.string().required(),
   lastName: Joi.string().required(),
   email: Joi.string().email().required(),
-  phone: Joi.string().required(), // Add this line
+  phone: Joi.string().optional(),
   password: Joi.string().min(6).required()
 });
 
@@ -50,16 +50,14 @@ export const signup = async (req: Request<{}, {}, SignupBody>, res: Response) =>
     const { error } = signupSchema.validate(req.body);
     if (error) {
       throw new AppError(error.details[0].message, STATUS_CODES.BAD_REQUEST);
+    }    // Check if user already exists - handle optional phone
+    const whereClause: any = { email };
+    if (phone) {
+      whereClause.OR = [{ email }, { phone }];
     }
-
-    // Check if user already exists
+    
     const existingUser = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { email },
-          { phone }
-        ]
-      }
+      where: whereClause
     });
 
     if (existingUser) {
@@ -77,18 +75,20 @@ export const signup = async (req: Request<{}, {}, SignupBody>, res: Response) =>
     }
 
     // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Create user
+    const hashedPassword = await bcrypt.hash(password, 10);    // Create user with optional fields
+    const userData: any = {
+      firstName,
+      lastName,
+      email,
+      password: hashedPassword,
+    };
+    
+    // Add optional fields if they exist
+    if (phone) userData.phone = phone;
+    if (profileImageUrl) userData.profileImage = profileImageUrl;
+    
     const user = await prisma.user.create({
-      data: {
-        firstName,
-        lastName,
-        email,
-        phone,
-        password: hashedPassword,
-        profileImage: profileImageUrl,
-      }
+      data: userData
     });
 
     // Generate JWT token
@@ -152,15 +152,15 @@ export const signup = async (req: Request<{}, {}, SignupBody>, res: Response) =>
 
 export const login = async (req: Request<{}, {}, LoginBody>, res: Response) => {
   try {
-    const { phone, password } = req.body;
-
-    // Find user by phone number
+    const { email, password } = req.body;
+    
+    // Find user by email only
     const user = await prisma.user.findUnique({
-      where: { phone }
+      where: { email }
     });
 
     if (!user) {
-      throw new AppError('Invalid phone number or password', STATUS_CODES.UNAUTHORIZED);
+      throw new AppError('Invalid login credentials', STATUS_CODES.UNAUTHORIZED);
     }
 
     // Check if user is deleted
@@ -169,9 +169,8 @@ export const login = async (req: Request<{}, {}, LoginBody>, res: Response) => {
     }
 
     // Verify password
-    const isValidPassword = await bcrypt.compare(password, user.password);
-    if (!isValidPassword) {
-      throw new AppError('Invalid phone number or password', STATUS_CODES.UNAUTHORIZED);
+    const isValidPassword = await bcrypt.compare(password, user.password);    if (!isValidPassword) {
+      throw new AppError('Invalid credentials', STATUS_CODES.UNAUTHORIZED);
     }
 
     // Generate JWT token

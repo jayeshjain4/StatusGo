@@ -1,0 +1,140 @@
+### Sample API Requests
+
+## Authentication Endpoints
+
+### Signup (with all fields)
+POST http://localhost:3000/api/auth/signup
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="firstName"
+
+John
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="lastName"
+
+Doe
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="email"
+
+john.doe@example.com
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="phone"
+
+1234567890
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="password"
+
+password123
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="profileImage"; filename="profile.jpg"
+Content-Type: image/jpeg
+
+< ./path/to/your/image.jpg
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Signup (without phone)
+POST http://localhost:3000/api/auth/signup
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="firstName"
+
+Jane
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="lastName"
+
+Smith
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="email"
+
+jane.smith@example.com
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="password"
+
+password123
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="profileImage"; filename="profile.jpg"
+Content-Type: image/jpeg
+
+< ./path/to/your/image.jpg
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Signup (without profileImage)
+POST http://localhost:3000/api/auth/signup
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="firstName"
+
+Mike
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="lastName"
+
+Johnson
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="email"
+
+mike.johnson@example.com
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="phone"
+
+9876543210
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="password"
+
+password123
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Signup (minimal - no phone, no profileImage)
+POST http://localhost:3000/api/auth/signup
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="firstName"
+
+Bob
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="lastName"
+
+Brown
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="email"
+
+bob.brown@example.com
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="password"
+
+password123
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Login
+POST http://localhost:3000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "jane.smith@example.com",
+  "password": "password123"
+}
+
+## Post Endpoints
+
+### Create a post
+POST http://localhost:3000/api/posts
+Authorization: Bearer YOUR_TOKEN_HERE
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="attachment"; filename="post.jpg"
+Content-Type: image/jpeg
+
+< ./path/to/your/post_image.jpg
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="caption"
+
+My first post
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Get all posts
+GET http://localhost:3000/api/posts
+Authorization: Bearer YOUR_TOKEN_HERE
