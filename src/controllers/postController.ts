@@ -227,3 +227,99 @@ export const getPostsByCategory = async (req: Request, res: Response) => {
     sendResponse(res, false, error, error.message, STATUS_CODES.SERVER_ERROR);
   }
 };
+
+// GET /api/post/search - Search posts with pagination
+export const searchPosts = async (req: Request, res: Response) => {
+  try {
+    const { q, categoryId, page = 1, limit = 10 } = req.query;
+    
+    // Convert page and limit to numbers
+    const pageNumber = parseInt(page as string) || 1;
+    const limitNumber = parseInt(limit as string) || 10;
+    
+    // Calculate offset for pagination
+    const offset = (pageNumber - 1) * limitNumber;
+    
+    // Validate page and limit
+    if (pageNumber < 1) {
+      sendResponse(res, false, null, 'Page number must be greater than 0', STATUS_CODES.BAD_REQUEST);
+      return;
+    }
+    
+    if (limitNumber < 1 || limitNumber > 100) {
+      sendResponse(res, false, null, 'Limit must be between 1 and 100', STATUS_CODES.BAD_REQUEST);
+      return;
+    }
+
+    // Build search conditions
+    const searchConditions: any = {};
+    
+    // If categoryId is provided, filter by category
+    if (categoryId) {
+      const categoryIdNum = parseInt(categoryId as string);
+      if (!isNaN(categoryIdNum)) {
+        searchConditions.categoryId = categoryIdNum;
+      }
+    }
+
+    // If search query is provided, search in category names
+    if (q && typeof q === 'string' && q.trim()) {
+      searchConditions.category = {
+        name: {
+          contains: q.trim(),
+          mode: 'insensitive' // Case-insensitive search
+        }
+      };
+    }
+
+    // Get total count of matching posts
+    const totalPosts = await prisma.post.count({
+      where: searchConditions
+    });
+    
+    // Calculate total pages
+    const totalPages = Math.ceil(totalPosts / limitNumber);    // Get posts with search conditions and pagination
+    const posts = await prisma.post.findMany({
+      where: searchConditions,
+      orderBy: { createdAt: 'desc' },
+      skip: offset,
+      take: limitNumber
+    });
+
+    // Prepare pagination metadata
+    const pagination = {
+      currentPage: pageNumber,
+      totalPages: totalPages,
+      totalPosts: totalPosts,
+      postsPerPage: limitNumber,
+      hasNextPage: pageNumber < totalPages,
+      hasPrevPage: pageNumber > 1,
+      nextPage: pageNumber < totalPages ? pageNumber + 1 : null,
+      prevPage: pageNumber > 1 ? pageNumber - 1 : null
+    };
+
+    // Prepare search metadata
+    const searchInfo = {
+      query: q || null,
+      categoryId: categoryId ? parseInt(categoryId as string) : null,
+      totalResults: totalPosts
+    };
+
+    const responseData = {
+      posts: posts,
+      pagination: pagination,
+      search: searchInfo
+    };
+
+    const message = q 
+      ? `Search results for "${q}" fetched successfully`
+      : categoryId 
+        ? `Posts from category ${categoryId} fetched successfully`
+        : 'Posts fetched successfully';
+
+    sendResponse(res, true, responseData, message, STATUS_CODES.OK);
+  } catch (error: any) {
+    console.error('Search posts error:', error);
+    sendResponse(res, false, error, error.message, STATUS_CODES.SERVER_ERROR);
+  }
+};
