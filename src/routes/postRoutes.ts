@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createPost, getAllPosts } from '../controllers/postController';
+import { createPost, getAllPosts, getPostsByCategory } from '../controllers/postController';
 import { upload } from '../../middleware/upload';
 
 const router = Router();
@@ -9,5 +9,8 @@ router.post('/', upload.single('attachment'), createPost);
 
 // GET /api/post - get all posts
 router.get('/', getAllPosts);
+
+// GET /api/post/category/:categoryId - get posts by category
+router.get('/category/:categoryId', getPostsByCategory);
 
 export default router;

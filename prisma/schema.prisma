@@ -38,11 +38,14 @@ model category {
   createdBy   user?   @relation(fields: [createdById], references: [id])
   deletedAt   DateTime? 
   popularity  Int       @default(0)
+  posts       post[]    // One-to-many relationship with posts
 }
 
 model post {
   id           Int      @id @default(autoincrement())
   attachment   String  // Cloudinary URL for photo or video
+  categoryId   Int?     // Foreign key to category
+  category     category? @relation(fields: [categoryId], references: [id])
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
