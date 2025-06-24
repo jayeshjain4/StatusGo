@@ -88,26 +88,88 @@ export const createPost = async (req: Request, res: Response) => {
   }
 };
 
-// GET /api/post - Get all posts
+// GET /api/post - Get all posts with pagination
 export const getAllPosts = async (req: Request, res: Response) => {
   try {
+    // Get page and limit from query parameters, with defaults
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    
+    // Calculate offset for pagination
+    const offset = (page - 1) * limit;
+    
+    // Validate page and limit
+    if (page < 1) {
+      sendResponse(res, false, null, 'Page number must be greater than 0', STATUS_CODES.BAD_REQUEST);
+      return;
+    }
+    
+    if (limit < 1 || limit > 100) {
+      sendResponse(res, false, null, 'Limit must be between 1 and 100', STATUS_CODES.BAD_REQUEST);
+      return;
+    }
+
+    // Get total count of posts
+    const totalPosts = await prisma.post.count();
+    
+    // Calculate total pages
+    const totalPages = Math.ceil(totalPosts / limit);
+      // Get posts with pagination
     const posts = await prisma.post.findMany({ 
-      orderBy: { createdAt: 'desc' }
+      orderBy: { id: 'asc' }, // Order by ID ascending to get oldest first
+      skip: offset,
+      take: limit
     });
-    sendResponse(res, true, posts, 'All posts fetched successfully', STATUS_CODES.OK);
+    
+    // Prepare pagination metadata
+    const pagination = {
+      currentPage: page,
+      totalPages: totalPages,
+      totalPosts: totalPosts,
+      postsPerPage: limit,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1,
+      nextPage: page < totalPages ? page + 1 : null,
+      prevPage: page > 1 ? page - 1 : null
+    };
+
+    const responseData = {
+      posts: posts,
+      pagination: pagination
+    };
+
+    sendResponse(res, true, responseData, 'Posts fetched successfully', STATUS_CODES.OK);
   } catch (error: any) {
     sendResponse(res, false, error, error.message, STATUS_CODES.SERVER_ERROR);
   }
 };
 
-// GET /api/post/category/:categoryId - Get posts by category
+// GET /api/post/category/:categoryId - Get posts by category with pagination
 export const getPostsByCategory = async (req: Request, res: Response) => {
   try {
     const { categoryId } = req.params;
     
+    // Get page and limit from query parameters, with defaults
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    
+    // Calculate offset for pagination
+    const offset = (page - 1) * limit;
+    
     // Validate categoryId
     if (!categoryId || isNaN(parseInt(categoryId))) {
       sendResponse(res, false, null, 'Invalid category ID', STATUS_CODES.BAD_REQUEST);
+      return;
+    }
+
+    // Validate page and limit
+    if (page < 1) {
+      sendResponse(res, false, null, 'Page number must be greater than 0', STATUS_CODES.BAD_REQUEST);
+      return;
+    }
+    
+    if (limit < 1 || limit > 100) {
+      sendResponse(res, false, null, 'Limit must be between 1 and 100', STATUS_CODES.BAD_REQUEST);
       return;
     }
 
@@ -121,14 +183,46 @@ export const getPostsByCategory = async (req: Request, res: Response) => {
       return;
     }
 
-    const posts = await prisma.post.findMany({
+    // Get total count of posts in this category
+    const totalPosts = await prisma.post.count({
+      where: {
+        categoryId: parseInt(categoryId)
+      } as any
+    });
+    
+    // Calculate total pages
+    const totalPages = Math.ceil(totalPosts / limit);    const posts = await prisma.post.findMany({
       where: {
         categoryId: parseInt(categoryId)
       } as any,
-      orderBy: { createdAt: 'desc' }
+      orderBy: { id: 'asc' }, // Order by ID ascending
+      skip: offset,
+      take: limit
     });
 
-    sendResponse(res, true, posts, `Posts from category '${categoryExists.name}' fetched successfully`, STATUS_CODES.OK);
+    // Prepare pagination metadata
+    const pagination = {
+      currentPage: page,
+      totalPages: totalPages,
+      totalPosts: totalPosts,
+      postsPerPage: limit,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1,
+      nextPage: page < totalPages ? page + 1 : null,
+      prevPage: page > 1 ? page - 1 : null
+    };
+
+    const responseData = {
+      posts: posts,
+      pagination: pagination,
+      category: {
+        id: categoryExists.id,
+        name: categoryExists.name,
+        imageUrl: categoryExists.imageUrl
+      }
+    };
+
+    sendResponse(res, true, responseData, `Posts from category '${categoryExists.name}' fetched successfully`, STATUS_CODES.OK);
   } catch (error: any) {
     sendResponse(res, false, error, error.message, STATUS_CODES.SERVER_ERROR);
   }
