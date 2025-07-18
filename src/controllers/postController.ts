@@ -114,11 +114,21 @@ export const getAllPosts = async (req: Request, res: Response) => {
     
     // Calculate total pages
     const totalPages = Math.ceil(totalPosts / limit);
-      // Get posts with pagination
-    const posts = await prisma.post.findMany({ 
-      orderBy: { id: 'asc' }, // Order by ID ascending to get oldest first
+
+    // Get posts with pagination, including like count and comments
+    const posts = await prisma.post.findMany({
+      orderBy: { createdAt: 'desc' }, // Order by creation date, newest first
       skip: offset,
-      take: limit
+      take: limit,
+      include: {
+        _count: {
+          select: {
+            likes: true,
+            comments: true
+          }
+        },
+        category: true
+      }
     });
     
     // Prepare pagination metadata
@@ -191,11 +201,22 @@ export const getPostsByCategory = async (req: Request, res: Response) => {
     });
     
     // Calculate total pages
-    const totalPages = Math.ceil(totalPosts / limit);    const posts = await prisma.post.findMany({
+    const totalPages = Math.ceil(totalPosts / limit);    
+    
+    const posts = await prisma.post.findMany({
       where: {
         categoryId: parseInt(categoryId)
-      } as any,
-      orderBy: { id: 'asc' }, // Order by ID ascending
+      },
+      orderBy: { createdAt: 'desc' }, // Order by creation date, newest first
+      include: {
+        _count: {
+          select: {
+            likes: true,
+            comments: true
+          }
+        },
+        category: true
+      },
       skip: offset,
       take: limit
     });

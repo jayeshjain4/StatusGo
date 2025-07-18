@@ -8,18 +8,20 @@ datasource db {
 }
 
 model user {
-  id            Int       @id @default(autoincrement())
-  firstName     String
-  lastName      String
-  email         String    @unique
-  phone         String?   @unique
-  password      String
-  role          Role      @default(USER)
-  isDeleted     Boolean   @default(false)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id              Int       @id @default(autoincrement())
+  firstName       String
+  lastName        String
+  email           String    @unique
+  phone           String?   @unique
+  password        String
+  role            Role      @default(USER)
+  isDeleted       Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
   categoryCreated category[]
-  profileImage  String?   // Cloudinary image URL
+  profileImage    String    // Cloudinary image URL (required)
+  likes          like[]    // One-to-many relationship with likes
+  comments       comment[] // One-to-many relationship with comments
 }
 
 enum Role {
@@ -30,22 +32,49 @@ enum Role {
 model category {
   id          Int       @id @default(autoincrement())
   name        String    @unique
-  imageUrl    String?    @unique  
+  imageUrl    String?   @unique  
   isDeleted   Boolean   @default(false)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   createdById Int?
-  createdBy   user?   @relation(fields: [createdById], references: [id])
+  createdBy   user?     @relation(fields: [createdById], references: [id])
   deletedAt   DateTime? 
   popularity  Int       @default(0)
   posts       post[]    // One-to-many relationship with posts
 }
 
 model post {
-  id           Int      @id @default(autoincrement())
-  attachment   String  // Cloudinary URL for photo or video
-  categoryId   Int?     // Foreign key to category
+  id           Int       @id @default(autoincrement())
+  attachment   String    // Cloudinary URL for photo or video
+  categoryId   Int?      // Foreign key to category
   category     category? @relation(fields: [categoryId], references: [id])
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  likes        like[]    // One-to-many relationship with likes
+  comments     comment[] // One-to-many relationship with comments
+  likeCount    Int       @default(0)  // Counter cache for likes
+}
+
+model like {
+  id        Int      @id @default(autoincrement())
+  postId    Int      
+  userId    Int      
+  createdAt DateTime @default(now())
+  post      post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      user     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@index([userId])
+  @@unique([postId, userId])
+}
+
+model comment {
+  id        Int      @id @default(autoincrement())
+  content   String
+  postId    Int      // Foreign key to post
+  userId    Int      // Foreign key to user
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  post      post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      user     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

@@ -4,6 +4,17 @@ import prisma from '../prisma';
 import { sendResponse } from '../utils/responseUtils';
 import STATUS_CODES from '../utils/statusCodes';
 
+// Import the Role type from Prisma
+import { Role } from '@prisma/client';
+
+// Extend the Request interface to include user
+export interface AuthRequest extends Request {
+    user?: {
+        id: number;
+        role: Role;
+    };
+}
+
 export const authenticate = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const authHeader = req.headers.authorization;
