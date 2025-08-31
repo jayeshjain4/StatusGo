@@ -9,19 +9,20 @@ datasource db {
 
 model user {
   id              Int       @id @default(autoincrement())
-  firstName       String
-  lastName        String
-  email           String    @unique
+firstName String?
+lastName  String?
+email     String? @unique
   phone           String?   @unique
-  password        String
+  password        String?
   role            Role      @default(USER)
   isDeleted       Boolean   @default(false)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   categoryCreated category[]
-  profileImage    String    // Cloudinary image URL (required)
+  profileImage    String?    // Cloudinary image URL (required)
   likes          like[]    // One-to-many relationship with likes
   comments       comment[] // One-to-many relationship with comments
+  firebaseUid String? @unique
 }
 
 enum Role {

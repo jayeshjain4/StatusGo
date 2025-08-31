@@ -10,7 +10,7 @@ import Joi from 'joi';
 import { Router } from 'express';
 import cloudinary from '../utils/cloudinary';
 import fs from 'fs';
-// import { validateRequest } from '../middlewares/validateRequest';
+import admin from 'firebase-admin'; // Make sure firebase-admin is initialized
 
 // Initialize Prisma client once
 const prisma = new PrismaClient();
@@ -186,8 +186,13 @@ export const login = async (req: Request<{}, {}, LoginBody>, res: Response) => {
       throw new AppError('Account has been deleted', STATUS_CODES.UNAUTHORIZED);
     }
 
+    // Check if password is set
+    if (!user.password) {
+      throw new AppError('Invalid credentials', STATUS_CODES.UNAUTHORIZED);
+    }
     // Verify password
-    const isValidPassword = await bcrypt.compare(password, user.password);    if (!isValidPassword) {
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
       throw new AppError('Invalid credentials', STATUS_CODES.UNAUTHORIZED);
     }
 
@@ -455,6 +460,50 @@ export const getAllUsers = async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error('Get all users error:', error);
     return sendResponse(res, false, null, 'Internal server error', STATUS_CODES.SERVER_ERROR);
+  }
+};
+
+// POST /api/auth/firebase-otp-login - Sync Firebase OTP user
+export const syncFirebaseOtpUser = async (req: Request, res: Response) => {
+  const { idToken } = req.body;
+  try {
+    // Verify Firebase ID token
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    const phoneNumber = decodedToken.phone_number;
+    const firebaseUid = decodedToken.uid;
+
+    if (!phoneNumber) {
+      return sendResponse(res, false, null, 'Phone number not found in Firebase token.', STATUS_CODES.BAD_REQUEST);
+    }
+
+    // Check if user exists by phone
+    let user = await prisma.user.findUnique({ where: { phone: phoneNumber } });
+
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          phone: phoneNumber,
+          firebaseUid: firebaseUid,
+          firstName: null,
+          lastName: null,
+          email: null,
+          password: null,
+          profileImage: null,
+        },
+      });
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: user.id },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '24h' }
+    );
+
+    return sendResponse(res, true, { user, token }, 'User synced successfully', STATUS_CODES.OK);
+  } catch (error: any) {
+    console.error('Firebase OTP sync error:', error);
+    return sendResponse(res, false, null, 'Invalid Firebase token.', STATUS_CODES.UNAUTHORIZED);
   }
 };
 
