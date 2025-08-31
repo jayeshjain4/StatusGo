@@ -191,7 +191,7 @@ export const login = async (req: Request<{}, {}, LoginBody>, res: Response) => {
       throw new AppError('Invalid credentials', STATUS_CODES.UNAUTHORIZED);
     }
 
-    // Generate JWT token
+    // Generate JWT tokenf
     const token = jwt.sign(
       { userId: user.id },
       process.env.JWT_SECRET || 'your-secret-key',
