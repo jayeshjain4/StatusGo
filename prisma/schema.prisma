@@ -8,21 +8,21 @@ datasource db {
 }
 
 model user {
-  id              Int        @id @default(autoincrement())
+  id              Int       @id @default(autoincrement())
   firstName       String?
   lastName        String?
-  email           String?    @unique
-  phone           String?    @unique
+  email           String?   @unique
+  phone           String?   @unique
   password        String?
-  role            Role       @default(USER)
-  isDeleted       Boolean    @default(false)
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  firebaseUid     String?   @unique
+  role            Role      @default(USER)
+  isDeleted       Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  profileImage    String?   // Cloudinary image URL
   categoryCreated category[]
-  profileImage    String? // Cloudinary image URL (required)
-  likes           like[] // One-to-many relationship with likes
+  likes           like[]    // One-to-many relationship with likes
   comments        comment[] // One-to-many relationship with comments
-  firebaseUid     String?    @unique
 }
 
 enum Role {
