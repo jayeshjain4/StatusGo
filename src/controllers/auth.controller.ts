@@ -127,6 +127,7 @@ export const signup = async (req: Request<{}, {}, SignupBody>, res: Response) =>
           email: user.email,
           phone: user.phone,
           profileImage: user.profileImage,
+          hasSetPreferences: (user as any).hasSetPreferences,
         },
         token
       },
@@ -174,7 +175,17 @@ export const login = async (req: Request<{}, {}, LoginBody>, res: Response) => {
     
     // Find user by email only
     const user = await prisma.user.findUnique({
-      where: { email }
+      where: { email },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+        password: true,
+        isDeleted: true,
+        hasSetPreferences: true
+      } as any
     });
 
     if (!user) {
@@ -187,11 +198,11 @@ export const login = async (req: Request<{}, {}, LoginBody>, res: Response) => {
     }
 
     // Check if password is set
-    if (!user.password) {
+    if (!(user as any).password) {
       throw new AppError('Invalid credentials', STATUS_CODES.UNAUTHORIZED);
     }
     // Verify password
-    const isValidPassword = await bcrypt.compare(password, user.password);
+    const isValidPassword = await bcrypt.compare(password, (user as any).password);
     if (!isValidPassword) {
       throw new AppError('Invalid credentials', STATUS_CODES.UNAUTHORIZED);
     }
@@ -208,11 +219,12 @@ export const login = async (req: Request<{}, {}, LoginBody>, res: Response) => {
       true,
       {
         user: {
-          id: user.id,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          email: user.email,
-          phone: user.phone
+          id: (user as any).id,
+          firstName: (user as any).firstName,
+          lastName: (user as any).lastName,
+          email: (user as any).email,
+          phone: (user as any).phone,
+          hasSetPreferences: (user as any).hasSetPreferences
         },
         token
       },

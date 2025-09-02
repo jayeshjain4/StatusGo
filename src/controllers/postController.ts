@@ -109,27 +109,103 @@ export const getAllPosts = async (req: Request, res: Response) => {
       return;
     }
 
+    // Check if user is authenticated and has set preferences
+    const userId = req.user?.id;
+    let usePersonalization = false;
+    
+    if (userId) {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { hasSetPreferences: true } as any
+      });
+      usePersonalization = (user as any)?.hasSetPreferences || false;
+    }
+
     // Get total count of posts
     const totalPosts = await prisma.post.count();
     
     // Calculate total pages
     const totalPages = Math.ceil(totalPosts / limit);
 
-    // Get posts with pagination, including like count and comments
-    const posts = await prisma.post.findMany({
-      orderBy: { createdAt: 'desc' }, // Order by creation date, newest first
-      skip: offset,
-      take: limit,
-      include: {
-        _count: {
-          select: {
-            likes: true,
-            comments: true
-          }
+    let posts;
+    
+    if (usePersonalization) {
+      // If user is authenticated and has preferences, mix personalized and general content
+      // Get 70% personalized posts and 30% popular posts for diversity
+      const personalizedLimit = Math.ceil(limit * 0.7);
+      const popularLimit = limit - personalizedLimit;
+      
+      // Get user preferences
+      const userPreferences = await (prisma as any).userPreference.findMany({
+        where: { userId },
+        orderBy: { weight: 'desc' }
+      });
+      
+      const preferredCategoryIds = userPreferences.map((pref: any) => pref.categoryId);
+      
+      // Get personalized posts
+      const personalizedPosts = await prisma.post.findMany({
+        where: {
+          categoryId: { in: preferredCategoryIds }
         },
-        category: true
-      }
-    });
+        orderBy: [
+          { likeCount: 'desc' },
+          { createdAt: 'desc' }
+        ],
+        skip: Math.floor(offset * 0.7),
+        take: personalizedLimit,
+        include: {
+          _count: {
+            select: {
+              likes: true,
+              comments: true
+            }
+          },
+          category: true
+        }
+      });
+      
+      // Get popular posts (not in preferred categories for diversity)
+      const popularPosts = await prisma.post.findMany({
+        where: {
+          categoryId: { notIn: preferredCategoryIds }
+        },
+        orderBy: [
+          { likeCount: 'desc' },
+          { createdAt: 'desc' }
+        ],
+        skip: Math.floor(offset * 0.3),
+        take: popularLimit,
+        include: {
+          _count: {
+            select: {
+              likes: true,
+              comments: true
+            }
+          },
+          category: true
+        }
+      });
+      
+      // Combine and shuffle the posts for natural feel
+      posts = [...personalizedPosts, ...popularPosts].sort(() => Math.random() - 0.5);
+    } else {
+      // Standard posts query for non-authenticated users or users without preferences
+      posts = await prisma.post.findMany({
+        orderBy: { createdAt: 'desc' }, // Order by creation date, newest first
+        skip: offset,
+        take: limit,
+        include: {
+          _count: {
+            select: {
+              likes: true,
+              comments: true
+            }
+          },
+          category: true
+        }
+      });
+    }
     
     // Prepare pagination metadata
     const pagination = {
@@ -145,10 +221,15 @@ export const getAllPosts = async (req: Request, res: Response) => {
 
     const responseData = {
       posts: posts,
-      pagination: pagination
+      pagination: pagination,
+      personalized: usePersonalization
     };
 
-    sendResponse(res, true, responseData, 'Posts fetched successfully', STATUS_CODES.OK);
+    const message = usePersonalization 
+      ? 'Personalized posts fetched successfully' 
+      : 'Posts fetched successfully';
+
+    sendResponse(res, true, responseData, message, STATUS_CODES.OK);
   } catch (error: any) {
     sendResponse(res, false, error, error.message, STATUS_CODES.SERVER_ERROR);
   }

@@ -8,21 +8,23 @@ datasource db {
 }
 
 model user {
-  id              Int       @id @default(autoincrement())
-  firstName       String?
-  lastName        String?
-  email           String?   @unique
-  phone           String?   @unique
-  password        String?
-  firebaseUid     String?   @unique
-  role            Role      @default(USER)
-  isDeleted       Boolean   @default(false)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  profileImage    String?   // Cloudinary image URL
-  categoryCreated category[]
-  likes           like[]    // One-to-many relationship with likes
-  comments        comment[] // One-to-many relationship with comments
+  id                    Int               @id @default(autoincrement())
+  firstName             String?
+  lastName              String?
+  email                 String?           @unique
+  phone                 String?           @unique
+  password              String?
+  firebaseUid           String?           @unique
+  role                  Role              @default(USER)
+  isDeleted             Boolean           @default(false)
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  profileImage          String?           // Cloudinary image URL
+  hasSetPreferences     Boolean           @default(false) // Track if user has set preferences
+  categoryCreated       category[]
+  likes                 like[]            // One-to-many relationship with likes
+  comments              comment[]         // One-to-many relationship with comments
+  userPreferences       userPreference[]  // Many-to-many relationship with categories
 }
 
 enum Role {
@@ -31,17 +33,18 @@ enum Role {
 }
 
 model category {
-  id          Int       @id @default(autoincrement())
-  name        String    @unique
-  imageUrl    String?   @unique
-  isDeleted   Boolean   @default(false)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  createdById Int?
-  createdBy   user?     @relation(fields: [createdById], references: [id])
-  deletedAt   DateTime?
-  popularity  Int       @default(0)
-  posts       post[] // One-to-many relationship with posts
+  id              Int              @id @default(autoincrement())
+  name            String           @unique
+  imageUrl        String?          @unique
+  isDeleted       Boolean          @default(false)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  createdById     Int?
+  createdBy       user?            @relation(fields: [createdById], references: [id])
+  deletedAt       DateTime?
+  popularity      Int              @default(0)
+  posts           post[]           // One-to-many relationship with posts
+  userPreferences userPreference[] // Many-to-many relationship with users
 }
 
 model post {
@@ -78,4 +81,19 @@ model comment {
   updatedAt DateTime @updatedAt
   post      post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   user      user     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model userPreference {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  categoryId Int
+  weight     Float    @default(1.0) // Weight for preference (higher = more preferred)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       user     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category   category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, categoryId])
+  @@index([userId])
+  @@index([categoryId])
 }
