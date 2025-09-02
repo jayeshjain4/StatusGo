@@ -27,16 +27,7 @@ export type UserPreference = {
   category?: any;
 };
 
-// Extended Prisma client type
-export interface ExtendedPrismaClient extends PrismaClient {
-  userPreference: {
-    findMany: (args?: any) => Promise<UserPreference[]>;
-    findUnique: (args: any) => Promise<UserPreference | null>;
-    create: (args: any) => Promise<UserPreference>;
-    createMany: (args: any) => Promise<any>;
-    update: (args: any) => Promise<UserPreference>;
-    delete: (args: any) => Promise<UserPreference>;
-    deleteMany: (args?: any) => Promise<any>;
-    count: (args?: any) => Promise<number>;
-  };
-}
+// Type for Prisma client with userPreference access
+export type ExtendedPrismaClient = PrismaClient & {
+  userPreference?: any;
+};
