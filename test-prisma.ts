@@ -7,7 +7,8 @@ async function testPrismaModels() {
     console.log('Testing userPreference model...');
     
     // Try to query an empty result to test if the model exists
-    const result = await prisma.userPreference.findMany({ take: 0 });
+    // Using type assertion for userPreference model
+    const result = await (prisma as any).userPreference.findMany({ take: 0 });
     console.log('✅ userPreference model exists and works!');
     
     // Test hasSetPreferences field
@@ -15,8 +16,8 @@ async function testPrismaModels() {
     const user = await prisma.user.findFirst({ 
       select: { 
         id: true, 
-        hasSetPreferences: true 
-      } 
+        hasSetPreferences: true
+      } as any
     });
     console.log('✅ hasSetPreferences field exists and works!');
     
