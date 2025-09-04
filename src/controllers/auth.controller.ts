@@ -127,7 +127,7 @@ export const signup = async (req: Request<{}, {}, SignupBody>, res: Response) =>
           email: user.email,
           phone: user.phone,
           profileImage: user.profileImage,
-          hasSetPreferences: (user as any).hasSetPreferences,
+          hasSetPreferences: false, // Default to false if field doesn't exist
         },
         token
       },
@@ -183,9 +183,8 @@ export const login = async (req: Request<{}, {}, LoginBody>, res: Response) => {
         email: true,
         phone: true,
         password: true,
-        isDeleted: true,
-        hasSetPreferences: true
-      } as any
+        isDeleted: true
+      }
     });
 
     if (!user) {
@@ -224,7 +223,7 @@ export const login = async (req: Request<{}, {}, LoginBody>, res: Response) => {
           lastName: (user as any).lastName,
           email: (user as any).email,
           phone: (user as any).phone,
-          hasSetPreferences: (user as any).hasSetPreferences
+          hasSetPreferences: false // Default to false if field doesn't exist
         },
         token
       },
