@@ -518,4 +518,125 @@ export const syncFirebaseOtpUser = async (req: Request, res: Response) => {
   }
 };
 
+// POST /api/auth/set-preferences - Set user category preferences
+export const setUserPreferences = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return sendResponse(res, false, null, 'User not authenticated', STATUS_CODES.UNAUTHORIZED);
+    }
+
+    const { categoryIds } = req.body;
+    
+    // Validate categoryIds
+    if (!Array.isArray(categoryIds) || categoryIds.length === 0) {
+      return sendResponse(res, false, null, 'Category IDs must be a non-empty array', STATUS_CODES.BAD_REQUEST);
+    }
+
+    // Validate that all categoryIds are numbers
+    const validCategoryIds = categoryIds.filter(id => typeof id === 'number' && !isNaN(id));
+    if (validCategoryIds.length !== categoryIds.length) {
+      return sendResponse(res, false, null, 'All category IDs must be valid numbers', STATUS_CODES.BAD_REQUEST);
+    }
+
+    // Check if all categories exist
+    const existingCategories = await prisma.category.findMany({
+      where: {
+        id: { in: validCategoryIds },
+        isDeleted: false
+      }
+    });
+
+    if (existingCategories.length !== validCategoryIds.length) {
+      return sendResponse(res, false, null, 'Some category IDs are invalid or do not exist', STATUS_CODES.BAD_REQUEST);
+    }
+
+    // Remove existing preferences for this user
+    await (prisma as any).userPreference.deleteMany({
+      where: { userId }
+    });
+
+    // Create new preferences
+    const preferences = validCategoryIds.map(categoryId => ({
+      userId,
+      categoryId,
+      weight: 1.0 // Default weight
+    }));
+
+    await (prisma as any).userPreference.createMany({
+      data: preferences
+    });
+
+    // Update user to mark that preferences have been set
+    await prisma.user.update({
+      where: { id: userId },
+      data: { hasSetPreferences: true } as any
+    });
+
+    // Fetch the created preferences with category details
+    const userPreferences = await (prisma as any).userPreference.findMany({
+      where: { userId },
+      include: {
+        category: {
+          select: {
+            id: true,
+            name: true,
+            imageUrl: true
+          }
+        }
+      }
+    });
+
+    return sendResponse(res, true, userPreferences, 'User preferences set successfully', STATUS_CODES.OK);
+  } catch (error: any) {
+    console.error('Set preferences error:', error);
+    return sendResponse(res, false, error, error.message, STATUS_CODES.SERVER_ERROR);
+  }
+};
+
+// GET /api/auth/get-preferences - Get user preferences
+export const getUserPreferences = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return sendResponse(res, false, null, 'User not authenticated', STATUS_CODES.UNAUTHORIZED);
+    }
+
+    const userPreferences = await (prisma as any).userPreference.findMany({
+      where: { userId },
+      include: {
+        category: {
+          select: {
+            id: true,
+            name: true,
+            imageUrl: true,
+            popularity: true
+          }
+        }
+      },
+      orderBy: {
+        weight: 'desc'
+      }
+    });
+
+    // Get user details to check if preferences have been set
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { hasSetPreferences: true } as any
+    });
+
+    const responseData = {
+      hasSetPreferences: (user as any)?.hasSetPreferences || false,
+      preferences: userPreferences
+    };
+
+    return sendResponse(res, true, responseData, 'User preferences fetched successfully', STATUS_CODES.OK);
+  } catch (error: any) {
+    console.error('Get preferences error:', error);
+    return sendResponse(res, false, error, error.message, STATUS_CODES.SERVER_ERROR);
+  }
+};
+
 const router = Router();
