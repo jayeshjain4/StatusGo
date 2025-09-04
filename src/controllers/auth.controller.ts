@@ -552,21 +552,16 @@ export const setUserPreferences = async (req: Request, res: Response) => {
       return sendResponse(res, false, null, 'Some category IDs are invalid or do not exist', STATUS_CODES.BAD_REQUEST);
     }
 
-    // Remove existing preferences for this user
-    await (prisma as any).userPreference.deleteMany({
-      where: { userId }
-    });
+    // Remove existing preferences for this user using raw SQL
+    await prisma.$executeRaw`DELETE FROM "userPreference" WHERE "userId" = ${userId}`;
 
-    // Create new preferences
-    const preferences = validCategoryIds.map(categoryId => ({
-      userId,
-      categoryId,
-      weight: 1.0 // Default weight
-    }));
-
-    await (prisma as any).userPreference.createMany({
-      data: preferences
-    });
+    // Create new preferences using raw SQL
+    for (const categoryId of validCategoryIds) {
+      await prisma.$executeRaw`
+        INSERT INTO "userPreference" ("userId", "categoryId", "weight", "createdAt", "updatedAt")
+        VALUES (${userId}, ${categoryId}, 1.0, NOW(), NOW())
+      `;
+    }
 
     // Update user to mark that preferences have been set
     await prisma.user.update({
@@ -574,19 +569,24 @@ export const setUserPreferences = async (req: Request, res: Response) => {
       data: { hasSetPreferences: true } as any
     });
 
-    // Fetch the created preferences with category details
-    const userPreferences = await (prisma as any).userPreference.findMany({
-      where: { userId },
-      include: {
-        category: {
-          select: {
-            id: true,
-            name: true,
-            imageUrl: true
-          }
-        }
-      }
-    });
+    // Fetch the created preferences with category details using raw SQL
+    const userPreferences = await prisma.$queryRaw`
+      SELECT 
+        up.id,
+        up."userId",
+        up."categoryId", 
+        up.weight,
+        up."createdAt",
+        up."updatedAt",
+        json_build_object(
+          'id', c.id,
+          'name', c.name,
+          'imageUrl', c."imageUrl"
+        ) as category
+      FROM "userPreference" up
+      JOIN category c ON up."categoryId" = c.id
+      WHERE up."userId" = ${userId}
+    `;
 
     return sendResponse(res, true, userPreferences, 'User preferences set successfully', STATUS_CODES.OK);
   } catch (error: any) {
@@ -604,22 +604,25 @@ export const getUserPreferences = async (req: Request, res: Response) => {
       return sendResponse(res, false, null, 'User not authenticated', STATUS_CODES.UNAUTHORIZED);
     }
 
-    const userPreferences = await (prisma as any).userPreference.findMany({
-      where: { userId },
-      include: {
-        category: {
-          select: {
-            id: true,
-            name: true,
-            imageUrl: true,
-            popularity: true
-          }
-        }
-      },
-      orderBy: {
-        weight: 'desc'
-      }
-    });
+    const userPreferences = await prisma.$queryRaw`
+      SELECT 
+        up.id,
+        up."userId",
+        up."categoryId", 
+        up.weight,
+        up."createdAt",
+        up."updatedAt",
+        json_build_object(
+          'id', c.id,
+          'name', c.name,
+          'imageUrl', c."imageUrl",
+          'popularity', c.popularity
+        ) as category
+      FROM "userPreference" up
+      JOIN category c ON up."categoryId" = c.id
+      WHERE up."userId" = ${userId}
+      ORDER BY up.weight DESC
+    `;
 
     // Get user details to check if preferences have been set
     const user = await prisma.user.findUnique({
