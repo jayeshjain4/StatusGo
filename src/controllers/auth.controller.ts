@@ -563,11 +563,11 @@ export const setUserPreferences = async (req: Request, res: Response) => {
       `;
     }
 
-    // Update user to mark that preferences have been set
-    await prisma.user.update({
-      where: { id: userId },
-      data: { hasSetPreferences: true } as any
-    });
+    // Skip updating hasSetPreferences for now since it doesn't exist in production
+    // await prisma.user.update({
+    //   where: { id: userId },
+    //   data: { hasSetPreferences: true } as any
+    // });
 
     // Fetch the created preferences with category details using raw SQL
     const userPreferences = await prisma.$queryRaw`
@@ -624,14 +624,9 @@ export const getUserPreferences = async (req: Request, res: Response) => {
       ORDER BY up.weight DESC
     `;
 
-    // Get user details to check if preferences have been set
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { hasSetPreferences: true } as any
-    });
-
+    // Skip checking hasSetPreferences since it doesn't exist in production
     const responseData = {
-      hasSetPreferences: (user as any)?.hasSetPreferences || false,
+      hasSetPreferences: Array.isArray(userPreferences) && userPreferences.length > 0,
       preferences: userPreferences
     };
 
